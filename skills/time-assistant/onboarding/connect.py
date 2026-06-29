@@ -1,6 +1,9 @@
-"""Self-contained guided paste-token validation + storage. No dependency on
-sibling skills: validation is a direct urllib call. HTTP is injectable for
-tests. The wizard (SKILL.md) opens the page and collects the paste in chat."""
+"""Self-contained token validation + storage. No dependency on sibling skills:
+validation is a direct urllib call. HTTP is injectable for tests. The wizard
+(SKILL.md) opens the provider page, then hands off to the `!`-run hidden-input
+helper `store_token.py` to capture the secret — tokens are never pasted into
+chat, a command preview, or terminal history."""
+import base64
 import json
 import urllib.request
 
@@ -9,10 +12,12 @@ from engine import credentials
 PROVIDER_FIELDS = {
     "oura": ["OURA_ACCESS_TOKEN"],
     "timeular": ["EARLY_API_KEY", "EARLY_API_SECRET"],
+    "toggl": ["TOGGL_API_TOKEN"],
 }
 PROVIDER_PAGES = {
     "oura": "https://cloud.ouraring.com/personal-access-tokens",
     "timeular": "https://profile.timeular.com/#/app/account/developerTools",
+    "toggl": "https://track.toggl.com/profile",
 }
 
 
@@ -35,6 +40,11 @@ def _default_http(provider_id, values) -> bool:
         return _http_ok("https://api.timeular.com/api/v3/developer/sign-in",
                         headers={"Content-Type": "application/json"},
                         data=body, method="POST")
+    if provider_id == "toggl":
+        raw = f"{values['TOGGL_API_TOKEN']}:api_token".encode()
+        encoded = base64.b64encode(raw).decode()
+        return _http_ok("https://api.track.toggl.com/api/v9/me",
+                        headers={"Authorization": f"Basic {encoded}"})
     return False
 
 

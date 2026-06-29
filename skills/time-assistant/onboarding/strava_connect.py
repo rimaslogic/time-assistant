@@ -95,3 +95,39 @@ def store(client_id, client_secret, refresh_token, *, setter=credentials.set_sec
     setter("STRAVA_CLIENT_ID", client_id, provider="keystore")
     setter("STRAVA_CLIENT_SECRET", client_secret, provider="keystore")
     setter("STRAVA_REFRESH_TOKEN", refresh_token, provider="keystore")
+
+
+def main(argv=None, *, getpass_fn=None, opener=None, capture=None,
+         exchange=None, store_fn=None, out=print) -> int:
+    """Securely connect Strava: reads client id/secret via hidden input, runs
+    on-device OAuth, and stores credentials — secrets never appear in argv,
+    stdout, or terminal history.  Run with the `!` prefix:
+
+        ! "$TIME_ASSISTANT_PYTHON" <plugin>/skills/time-assistant/onboarding/strava_connect.py
+    """
+    import getpass as _getpass
+    import webbrowser
+
+    getpass_fn = getpass_fn or _getpass.getpass
+    opener = opener or webbrowser.open
+    capture_fn = capture or capture_code
+    exchange_fn = exchange or exchange_code
+    store_fn = store_fn or store
+
+    client_id = getpass_fn("Paste STRAVA_CLIENT_ID (input hidden): ").strip()
+    client_secret = getpass_fn("Paste STRAVA_CLIENT_SECRET (input hidden): ").strip()
+
+    auth_url = build_authorize_url(client_id)
+    out(f"Opening Strava authorization page… (approve in the browser, then return here)")
+    opener(auth_url)
+
+    code = capture_fn()
+    token_data = exchange_fn(client_id, client_secret, code)
+    refresh_token = token_data["refresh_token"]
+    store_fn(client_id, client_secret, refresh_token)
+    out("✓ Strava connected — credentials stored in your OS keystore. The values were never shown or logged.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

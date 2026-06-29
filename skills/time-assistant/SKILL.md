@@ -121,9 +121,25 @@ Then invoke steps as `"$PY" -c "from onboarding.setup import next_step; ..."`. T
 
 4. **Calendar — recommended first source** (`calendar`) — connect **Google Calendar** through Claude's own connector UI (no token paste required). This single connection makes the assistant immediately useful and is fully self-contained.
 
-5. **Optional enrichments** (`enrichments`) — for each provider in `onboarding.connect.PROVIDER_FIELDS` the user wants (Oura, Timeular): open `onboarding.connect.PROVIDER_PAGES[id]` with `open`/`xdg-open`/`explorer`, ask them to paste the token(s), call `onboarding.connect.validate(id, values)`; on success `onboarding.connect.store(id, values)` (saved to the OS keystore). On failure, re-open the page and offer a retry. All enrichments are skippable — tell the user they can add them anytime.
+5. **Optional enrichments** (`enrichments`) — for each provider in `onboarding.connect.PROVIDER_FIELDS` the user wants (Oura, Timeular, Toggl): open `onboarding.connect.PROVIDER_PAGES[id]` with `open`/`xdg-open`/`explorer` so they can create the token, then tell them to run the hidden-input helper **themselves** with the `!` prefix (this keeps the secret out of the chat, command previews, and terminal history). Substitute the **FULL absolute path** to the script — do NOT rely on `${CLAUDE_PLUGIN_ROOT}` being set in the user's `!` shell:
 
-   - **Strava (advanced)** — Strava needs an API app, so it is a few more steps; offer it only if the user wants training-load data. Flow via `onboarding.strava_connect`: tell them you will open `strava_connect.APP_PAGE`, have them create an API app and paste the **Client ID** and **Client Secret**; then call `strava_connect.build_authorize_url(client_id)`, open it, run `strava_connect.capture_code()` (a localhost listener catches the approval), `strava_connect.exchange_code(client_id, client_secret, code)` for the refresh token, and `strava_connect.store(client_id, client_secret, refresh_token)`. All on-device, no backend. If they do not use Strava, skip it.
+   ```text
+   ! "$TIME_ASSISTANT_PYTHON" "/abs/path/to/skills/time-assistant/onboarding/store_token.py" oura
+   ```
+
+   The helper hides input (`getpass`), validates against the provider's API, and stores in the OS keystore. On failure it reports without storing and the user can re-run. All enrichments are skippable — tell the user they can add them anytime.
+
+   **Do NOT ask the user to paste tokens into the chat, and never put a token in a command you run.** Secrets are entered only through these `!`-run hidden prompts.
+
+   - **Strava (advanced)** — needs an API app and an OAuth round-trip; offer it only if the user wants training-load data. Tell them to run `onboarding.strava_connect` **themselves** with the `!` prefix (hidden Client ID/Secret + on-device OAuth), again substituting the FULL absolute path:
+
+   ```text
+   ! "$TIME_ASSISTANT_PYTHON" "/abs/path/to/skills/time-assistant/onboarding/strava_connect.py"
+   ```
+
+   It reads the Client ID and Secret via hidden prompts, opens the Strava authorization page, catches the OAuth callback on a localhost listener, exchanges for a refresh token, and stores everything in the OS keystore — no values shown or logged. On-device, no backend. If they do not use Strava, skip it.
+
+   **Security note:** the assistant must never request a secret in chat or place one in a command — secrets are entered only through these `!`-run hidden prompts.
 
 6. **First brief** (`first_brief`) — generate the first morning brief immediately so the user sees the assistant working before they leave the wizard.
 

@@ -19,3 +19,18 @@ def test_store_writes_each_field_via_keystore():
                   setter=lambda n, v, provider=None: calls.append((n, v, provider)))
     assert ("EARLY_API_KEY", "k", "keystore") in calls
     assert ("EARLY_API_SECRET", "s", "keystore") in calls
+
+
+def test_toggl_provider_fields_present():
+    assert connect.PROVIDER_FIELDS["toggl"] == ["TOGGL_API_TOKEN"]
+    assert connect.PROVIDER_PAGES["toggl"].startswith("https://")
+
+
+def test_validate_toggl_true():
+    assert connect.validate("toggl", {"TOGGL_API_TOKEN": "good"},
+                            http=lambda pid, vals: vals["TOGGL_API_TOKEN"] == "good") is True
+
+
+def test_validate_toggl_false():
+    assert connect.validate("toggl", {"TOGGL_API_TOKEN": "bad"},
+                            http=lambda pid, vals: vals["TOGGL_API_TOKEN"] == "good") is False
