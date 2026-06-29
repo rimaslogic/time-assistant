@@ -238,12 +238,15 @@
       <li>
         <div class="step-num">2</div>
         <div class="step-body">
-          <div class="step-title">Add the marketplace and install the plugin</div>
+          <div class="step-title">Add the marketplace, install, and activate</div>
           <div class="step-desc">
-            Paste both commands into Claude Code (one at a time):
+            Paste these into Claude Code (one at a time). The last one,
+            <code>/reload-plugins</code>, activates the freshly installed plugin
+            in your current session:
           </div>
           <pre>/plugin marketplace add rimaslogic/time-assistant
-/plugin install time-assistant@rimaslogic-plugins</pre>
+/plugin install time-assistant@rimaslogic-plugins
+/reload-plugins</pre>
           <div class="step-desc" style="margin-top:0.4rem;">
             Python is set up automatically the first time Claude Code starts
             after installation — no manual Python install needed.
