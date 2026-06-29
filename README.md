@@ -37,6 +37,8 @@ A friendly wizard takes it from there. Connecting your Google Calendar alone is 
 
 > **Note:** the `/plugin` commands must be run inside a **Claude Code session** (terminal `>_` interface). If `claude` isn't found in a scheduled brief, see [`INSTALL.md`](./INSTALL.md) for the `~/.local/bin` PATH workaround.
 
+**New to Claude Code?** Paste [this guided-install prompt](./welcome/claude-desktop-prompt.md) into the Claude **desktop app** and it'll walk you through installing Claude Code + the plugin, one step at a time.
+
 Full walkthrough: [`INSTALL.md`](./INSTALL.md).
 
 ---
