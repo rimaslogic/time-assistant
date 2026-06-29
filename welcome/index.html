@@ -240,9 +240,10 @@
         <div class="step-body">
           <div class="step-title">Add the marketplace, install, and activate</div>
           <div class="step-desc">
-            Paste these into Claude Code (one at a time). The last one,
-            <code>/reload-plugins</code>, activates the freshly installed plugin
-            in your current session:
+            Open a <strong>Claude Code session</strong> (the <code>&gt;_</code> terminal
+            interface — not a plain claude.ai chat window). Then paste these one at a time.
+            The last one, <code>/reload-plugins</code>, activates the freshly installed
+            plugin in your current session:
           </div>
           <pre>/plugin marketplace add rimaslogic/time-assistant
 /plugin install time-assistant@rimaslogic-plugins
@@ -250,6 +251,8 @@
           <div class="step-desc" style="margin-top:0.4rem;">
             Python is set up automatically the first time Claude Code starts
             after installation — no manual Python install needed.
+            If you see "claude: command not found" in a scheduled brief, add
+            <code>~/.local/bin</code> to your PATH (common install location for pipx/uv).
           </div>
         </div>
       </li>

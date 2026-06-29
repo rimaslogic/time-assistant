@@ -33,7 +33,11 @@ You need **Claude Code** and a **paid Claude plan** ([get Claude Code](https://c
 
 > **`set up my time assistant`**
 
-A friendly wizard takes it from there. Connecting your Google Calendar alone is enough to get value — everything else is optional. **~5 minutes, nothing else to install.** Full walkthrough: [`INSTALL.md`](./INSTALL.md).
+A friendly wizard takes it from there. Connecting your Google Calendar alone is enough to get value — everything else is optional. **~5 minutes, nothing else to install.**
+
+> **Note:** the `/plugin` commands must be run inside a **Claude Code session** (terminal `>_` interface). If `claude` isn't found in a scheduled brief, see [`INSTALL.md`](./INSTALL.md) for the `~/.local/bin` PATH workaround.
+
+Full walkthrough: [`INSTALL.md`](./INSTALL.md).
 
 ---
 

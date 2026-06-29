@@ -13,6 +13,8 @@
 
 ## Install
 
+> **Important:** the `/plugin` commands must be run inside a **Claude Code session** (the `>_` terminal interface), not in a plain claude.ai chat window. If you see "isn't available in this environment", you're in the wrong place — open a Claude Code session instead.
+
 ### Step 1 — Add the marketplace
 
 ```
@@ -66,6 +68,12 @@ into the plugin's per-OS data folder and exports `TIME_ASSISTANT_PYTHON` via
 `CLAUDE_ENV_FILE`. Subsequent sessions reuse the cached interpreter — no network call
 after the first run.
 
+**`claude` not found in the scheduled brief?** If `which claude` returns nothing inside
+launchd or cron (which use a stripped PATH), the scheduler falls back to
+`~/.local/bin/claude` — the standard `pipx`/`uv` install location. If your `claude`
+lives elsewhere, add `export PATH="$HOME/.local/bin:$PATH"` to `~/.zshrc` (or `~/.bashrc`)
+so the resolved path is correct.
+
 You do **not** need to install or configure Python yourself.
 
 ---
@@ -117,6 +125,7 @@ Run on a clean tenant (no existing data store):
 | Google Calendar | connector authorises; at least one calendar event is readable |
 | Oura token | validates against the Oura API; stored in the OS keystore |
 | Timeular token | validates against Timeular API v3; stored in the OS keystore |
+| Toggl token | paste a `toggl_sk_…` service-account token → wizard resolves it to the canonical classic `api_token` via `GET /api/v9/me` and stores that; Basic auth in the adapter works thereafter |
 | First brief | morning brief renders without errors |
 
 ---
@@ -152,8 +161,9 @@ Scenario: user wants training-load data.
 2. Confirm the wizard **shows** the exact artifact (launchd plist / cron line / schtasks
    command) before installing.
 3. macOS/Linux: after you agree, confirm the launchd job / cron line is installed and the
-   scheduled `claude -p` brief fires at the chosen time. Windows: confirm the printed
-   `schtasks` command, run it, and verify the task.
+   wrapper fires at the chosen time — the brief lands in `<store>/briefs/<date>.md` and
+   `scheduler.log` records the run. Windows: confirm the printed `schtasks` command, run it,
+   and verify the task.
 
 ---
 

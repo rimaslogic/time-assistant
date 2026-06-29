@@ -107,6 +107,8 @@ Then invoke steps as `"$PY" -c "from onboarding.setup import next_step; ..."`. T
 
 **Resuming an interrupted setup:** call `onboarding.setup.next_step(store_dir)` to find the first incomplete step. Re-running resumes at that step and never duplicates work. Track completions with `onboarding.setup.mark_step_done(store_dir, "<step-id>")` after each step.
 
+**Batched consent — ask once at the start:** Before running any read/write commands, opening data folders, or reading calendar/integrations/rules, ask the user **once** for broad permission — e.g. "To set you up I'll need to read your data folder and run a few quick read commands (calendar, integrations, rules). OK to proceed and allow access to TimeAssistant/…?" A single "yes, allow access" covers all subsequent read commands in this session. Before each remaining individual step prompt, add one plain-language sentence of *why* that command runs — this prevents a dozen scary-looking permission prompts in a row.
+
 **Steps:**
 
 1. **Identity** (`identity`) — ask the user's name; detect timezone from Bash (`date +%Z` or system locale) and offer it to confirm; ask their working days.
@@ -121,29 +123,35 @@ Then invoke steps as `"$PY" -c "from onboarding.setup import next_step; ..."`. T
 
 4. **Calendar — recommended first source** (`calendar`) — connect **Google Calendar** through Claude's own connector UI (no token paste required). This single connection makes the assistant immediately useful and is fully self-contained.
 
-5. **Optional enrichments** (`enrichments`) — for each provider in `onboarding.connect.PROVIDER_FIELDS` the user wants (Oura, Timeular, Toggl): open `onboarding.connect.PROVIDER_PAGES[id]` with `open`/`xdg-open`/`explorer` so they can create the token, then tell them to run the hidden-input helper **themselves** with the `!` prefix (this keeps the secret out of the chat, command previews, and terminal history). Substitute the **FULL absolute path** to the script — do NOT rely on `${CLAUDE_PLUGIN_ROOT}` being set in the user's `!` shell:
+5. **Optional enrichments** (`enrichments`) — for each provider in `onboarding.connect.PROVIDER_FIELDS` the user wants (Oura, Timeular/EARLY, Toggl): open **exactly one** provider page at a time, using the specific sub-URL for token/profile creation (e.g. Toggl → Profile page, not a generic Integrations hub; never open multiple provider tabs at once). Wait for the user to complete that step, then move to the next. Open with `open`/`xdg-open`/`explorer`, then tell them to run the hidden-input helper **themselves** with the `!` prefix (keeps the secret out of the chat, command previews, and terminal history).
 
-   ```text
+   **⚠ Paid-plan warning — say this before opening the page:** Timeular integrations and the EARLY API each require a **paid plan of that service**. Before opening Timeular or EARLY setup pages, say: "Note: this integration requires a paid [Timeular / EARLY] subscription. Skip if you don't have one — you can add it any time." Let the user skip without friction.
+
+   **Oura "no data yet" = normal sync delay, not an error:** If Oura returns no readiness data immediately after connecting, tell the user: "Your ring is still syncing — this is normal and usually resolves within a few minutes. The assistant will pick up data on the next run." Do not frame this as a connection error.
+
+   First **determine the plugin's install directory** and give the user the command with the **FULL absolute path** to the helper — do NOT rely on `${CLAUDE_PLUGIN_ROOT}` being set in the user's `!` shell (it usually is not, and the path would expand to `/skills/...` → "no such file"). For example, after resolving the absolute path:
+
+   ```
    ! "$TIME_ASSISTANT_PYTHON" "/abs/path/to/skills/time-assistant/onboarding/store_token.py" oura
    ```
 
-   The helper hides input (`getpass`), validates against the provider's API, and stores in the OS keystore. On failure it reports without storing and the user can re-run. All enrichments are skippable — tell the user they can add them anytime.
+   The helper hides input, validates against the provider's API, and stores in the OS keystore. On failure it reports without storing and the user can re-run. All enrichments are skippable — tell the user they can add them anytime.
 
-   **Do NOT ask the user to paste tokens into the chat, and never put a token in a command you run.** Secrets are entered only through these `!`-run hidden prompts.
+   **Do NOT ask the user to paste tokens into the chat and never put a token in a command you run.** Secrets are entered only through these `!`-run hidden prompts.
 
-   - **Strava (advanced)** — needs an API app and an OAuth round-trip; offer it only if the user wants training-load data. Tell them to run `onboarding.strava_connect` **themselves** with the `!` prefix (hidden Client ID/Secret + on-device OAuth), again substituting the FULL absolute path:
+   - **Strava (advanced)** — Strava needs an API app and an OAuth round-trip, so it is a few more steps; offer it only if the user wants training-load data. **⚠ Paid-plan warning:** the Strava API requires a paid Strava subscription for extended data access — warn the user before proceeding and let them skip. Tell them to run the Strava connector **themselves** with the `!` prefix (hidden client id/secret + on-device OAuth). As above, substitute the **FULL absolute path** to the script — do NOT rely on `${CLAUDE_PLUGIN_ROOT}` in the user's `!` shell:
 
-   ```text
+   ```
    ! "$TIME_ASSISTANT_PYTHON" "/abs/path/to/skills/time-assistant/onboarding/strava_connect.py"
    ```
 
-   It reads the Client ID and Secret via hidden prompts, opens the Strava authorization page, catches the OAuth callback on a localhost listener, exchanges for a refresh token, and stores everything in the OS keystore — no values shown or logged. On-device, no backend. If they do not use Strava, skip it.
+   The script reads Client ID and Client Secret via hidden prompts, opens the Strava authorization page, catches the OAuth callback on a localhost listener, exchanges for a refresh token, and stores all credentials in the OS keystore — no values are shown or logged. All on-device, no backend. If they do not use Strava, skip it.
 
    **Security note:** the assistant must never request a secret in chat or place one in a command — secrets are entered only through these `!`-run hidden prompts.
 
 6. **First brief** (`first_brief`) — generate the first morning brief immediately so the user sees the assistant working before they leave the wizard.
 
-   **Optionally, offer to schedule a daily brief.** Ask if they would like the brief to run automatically each morning and at what time. If yes: `art = onboarding.schedule.artifact_for(<platform>, hour, minute)`; show them exactly what will be added; on macOS/Linux call `onboarding.schedule.install(<platform>, art)` after they agree; on Windows show `art["content"]` for them to paste. Always show what is being installed first — never modify their system silently. Skippable.
+   **Optionally, offer to schedule a daily brief.** Ask if they would like the brief to run automatically each morning and at what time. If yes: `art = onboarding.schedule.artifact_for(<platform>, hour, minute)`; show them exactly what will be added; on macOS/Linux call `onboarding.schedule.install(<platform>, art)` after they agree; on Windows show `art["content"]` for them to paste. Always show what is being installed first — never modify their system silently. When asking the user to confirm any action (e.g. "Install this?" or "Shall I schedule this?"), explicitly restate exactly what to type — for example: "Type `yes` to install, or press Enter to skip." Claude Code's session-rating survey can appear alongside the prompt and obscure the original question, so restating makes the confirmation unambiguous. Skippable.
 
 After each step, call `onboarding.setup.mark_step_done(store_dir, "<step-id>")`. Note: progress is persisted only from the **store** step onward — before the store exists there is nothing to write, and `mark_step_done` safely no-ops.
 
@@ -224,7 +232,7 @@ Pull from `daily_scores.json` and summarize. Don't re-run the routine.
 Produces a full brief identical to the routine, but run locally on request:
 
 1. Pull **today's Google Calendar** events (tenant's timezone from `config.json`)
-2. Pull **last 7 days time-tracking entries** via the configured time-tracking adapter and compute HVT%, unclassified %
+2. Pull **last 7 days time-tracking entries** via the configured time-tracking adapter. **TIMEZONE RULE (mandatory):** time-source timestamps (Toggl, etc.) are UTC — convert every timestamp to the tenant's timezone BEFORE bucketing by day or computing hours: `engine.timeutil.to_zone(ts, config.user.timezone)`. Failure to convert causes entries to appear in the wrong day (e.g. 04:10 UTC shown instead of 06:10 CEST). Then compute HVT%, unclassified %.
 3. Pull **Oura readiness** (today + 7-day trend) if `oura` is in tenant's `config.integrations`
 4. Pull **last 7 days Strava load** (suffer, hours, HIIT count) if `strava` is in tenant's `config.integrations`
 5. Apply `rules.json` to classify events; apply `template_rules.json` for drift flags
@@ -241,7 +249,7 @@ Produces a full brief identical to the routine, but run locally on request:
 
 Produces the end-of-day review. Steps:
 
-1. Pull **today's tracked entries** via the configured time-tracking adapter (use `--json` and decode manually; the text formatter can crash on null notes). Timestamps are UTC → convert to tenant's timezone before bucketing by day.
+1. Pull **today's tracked entries** via the configured time-tracking adapter (use `--json` and decode manually; the text formatter can crash on null notes). **TIMEZONE RULE (mandatory):** timestamps are UTC — convert every entry's timestamp with `engine.timeutil.to_zone(ts, config.user.timezone)` BEFORE bucketing by day or displaying times. Skipping this causes entries to appear shifted (e.g. 04:10 UTC instead of 06:10 CEST).
 2. Classify each block (HVT/LVT or tenant's framework) via `rules.json`; surface any genuinely ambiguous block (one that swings the score materially) with `AskUserQuestion` rather than guessing.
 3. Compute the day: tracked hours, HVT%, score (`hvt_pts`/`adherence_pts`/`frag_pts`), boundary-breach flag. Scoring logic lives in `engine/score.py` (`score_day`).
 4. **Client budget tracker** — only when the `client_budget` module is enabled (same check and rendering as morning brief). When enabled, render the table from `customers.json` MTD tracked vs this month's budget using today's scored blocks:
