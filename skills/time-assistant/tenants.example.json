@@ -1,0 +1,13 @@
+{
+  "_comment": "Copy to tenants.json (gitignored). Maps tenant id -> local store path + optional repo.",
+  "tenants": {
+    "you": {
+      "store_path": "~/time-assistant-data",
+      "github_repo": "<your-org>/<tenant>-memory"
+    },
+    "acme": {
+      "store_path": "~/time-assistant-data-acme",
+      "github_repo": "<your-org>/acme-memory"
+    }
+  }
+}

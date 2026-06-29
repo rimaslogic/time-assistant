@@ -1,0 +1,17 @@
+{
+  "_comment": "Default framework. Numeric parity with the original hardcoded engine.",
+  "framework": {
+    "hvt_categories": ["strategic", "product", "content", "learning", "bd"],
+    "lvt_categories": ["email", "meeting", "admin", "chat", "support", "context-switch"],
+    "hvt_ratio_target": 0.80,
+    "lvt_cap": 0.20,
+    "weights": {
+      "hvt_pts": 60,
+      "adherence_pts": 20,
+      "frag_pts": 20,
+      "frag_full_max": 2,
+      "frag_zero_min": 6
+    }
+  },
+  "modules": []
+}

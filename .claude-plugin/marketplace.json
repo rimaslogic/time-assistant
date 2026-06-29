@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "rimaslogic-plugins",
+  "description": "Rimas Logic Claude Code plugin collection — personal productivity and AI-assisted time management.",
+  "homepage": "https://github.com/rimaslogic/time-assistant",
+  "repository": "https://github.com/rimaslogic/time-assistant",
+  "owner": {
+    "name": "Rimas Lukaszewicz",
+    "url": "https://rimaslogic.pl"
+  },
+  "plugins": [
+    {
+      "name": "time-assistant",
+      "source": "./",
+      "description": "Multi-tenant 80/20-style time analysis & planning assistant",
+      "author": {
+        "name": "Rimas Lukaszewicz"
+      },
+      "category": "productivity",
+      "tags": ["time-tracking", "80-20", "hvt", "planning"]
+    }
+  ]
+}

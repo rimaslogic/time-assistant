@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Time Assistant Tenant Config",
+  "type": "object",
+  "required": ["tenant_id", "user"],
+  "properties": {
+    "tenant_id": {"type": "string"},
+    "profile": {"type": "string"},
+    "user": {
+      "type": "object",
+      "required": ["name", "timezone"],
+      "properties": {
+        "name": {"type": "string"},
+        "timezone": {"type": "string"},
+        "working_days": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "framework": {"type": "object"},
+    "integrations": {"type": "array", "items": {"type": "string"}},
+    "modules": {"type": "array", "items": {"type": "string"}},
+    "attribution": {"type": "object"}
+  }
+}

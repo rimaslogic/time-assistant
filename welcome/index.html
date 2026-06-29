@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Time Assistant — Install</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f8f8f6;
+      color: #1a1a1a;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    .card {
+      background: #ffffff;
+      border: 1px solid #e4e4e0;
+      border-radius: 12px;
+      padding: 2.5rem 2rem;
+      max-width: 560px;
+      width: 100%;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .logo {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-size: 1.55rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.6rem;
+    }
+
+    .tagline {
+      font-size: 1rem;
+      color: #555;
+      line-height: 1.5;
+      margin-bottom: 2rem;
+    }
+
+    .download-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      margin-bottom: 0.9rem;
+    }
+
+    .btn-download {
+      display: inline-block;
+      background: #1a1a1a;
+      color: #fff;
+      text-decoration: none;
+      padding: 0.7rem 1.4rem;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      transition: background 0.15s;
+    }
+    .btn-download:hover { background: #333; }
+
+    .terminal-line {
+      font-size: 0.85rem;
+      color: #555;
+      line-height: 1.5;
+      margin-bottom: 1.1rem;
+    }
+    .terminal-line code { white-space: nowrap; }
+
+    .plan-note {
+      background: #fff8e6;
+      border: 1px solid #f0e0a8;
+      border-radius: 8px;
+      padding: 0.7rem 0.9rem;
+      font-size: 0.84rem;
+      color: #7a5c00;
+      line-height: 1.5;
+      margin-bottom: 2.2rem;
+    }
+
+    .steps-heading {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: #888;
+      margin-bottom: 1rem;
+    }
+
+    ol {
+      list-style: none;
+      counter-reset: step;
+      display: flex;
+      flex-direction: column;
+      gap: 1.1rem;
+    }
+
+    li {
+      counter-increment: step;
+      display: flex;
+      gap: 0.9rem;
+      align-items: flex-start;
+    }
+
+    .step-num {
+      flex-shrink: 0;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #f0f0ec;
+      border: 1px solid #ddd;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #444;
+      margin-top: 1px;
+    }
+
+    .step-body { flex: 1; }
+
+    .step-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .step-desc {
+      font-size: 0.87rem;
+      color: #555;
+      line-height: 1.5;
+    }
+
+    code {
+      font-family: "SF Mono", "Fira Code", Consolas, monospace;
+      font-size: 0.82rem;
+      background: #f2f2ee;
+      border: 1px solid #e0e0dc;
+      border-radius: 5px;
+      padding: 0.25rem 0.45rem;
+      white-space: nowrap;
+    }
+
+    pre {
+      background: #1a1a1a;
+      color: #e8e8e4;
+      border-radius: 8px;
+      padding: 0.85rem 1rem;
+      font-family: "SF Mono", "Fira Code", Consolas, monospace;
+      font-size: 0.82rem;
+      line-height: 1.55;
+      margin-top: 0.5rem;
+      overflow-x: auto;
+    }
+
+    .step-final {
+      background: #f6f8ff;
+      border: 1px solid #d8e0ff;
+      border-radius: 8px;
+      padding: 0.7rem 0.9rem;
+      font-family: "SF Mono", "Fira Code", Consolas, monospace;
+      font-size: 0.88rem;
+      color: #2c3a8c;
+      margin-top: 0.45rem;
+    }
+
+    .footer {
+      margin-top: 2rem;
+      padding-top: 1.2rem;
+      border-top: 1px solid #eee;
+      font-size: 0.8rem;
+      color: #aaa;
+      text-align: center;
+    }
+    .footer a { color: #888; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">⏱</div>
+    <h1>Time Assistant</h1>
+    <p class="tagline">
+      An 80/20-style time coach for Claude Code — classifies your calendar events
+      as high- or low-value, scores your days and weeks, and helps you plan toward
+      an 80% HVT target.
+    </p>
+
+    <div class="download-row">
+      <a
+        class="btn-download"
+        href="https://claude.ai/api/desktop/darwin/universal/dmg/latest/redirect"
+        target="_blank"
+        rel="noopener noreferrer"
+      >Download for macOS</a>
+      <a
+        class="btn-download"
+        href="https://claude.com/download"
+        target="_blank"
+        rel="noopener noreferrer"
+      >Download for Windows</a>
+    </div>
+
+    <p class="terminal-line">
+      On Linux, or prefer the terminal?
+      Run <code>curl -fsSL https://claude.ai/install.sh | bash</code>
+    </p>
+
+    <p class="plan-note">
+      <strong>Note:</strong> Claude Code requires a paid Claude plan
+      (Pro, Max, Team, or Enterprise) — the free Claude.ai plan doesn't
+      include Claude Code.
+    </p>
+
+    <p class="steps-heading">Getting started — 3 steps</p>
+
+    <ol>
+      <li>
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-title">Install Claude Code and sign in</div>
+          <div class="step-desc">
+            Download Claude Code from the button above. Follow the installer,
+            then run <code>claude</code> in your terminal and sign in with your
+            Anthropic account.
+          </div>
+        </div>
+      </li>
+
+      <li>
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <div class="step-title">Add the marketplace and install the plugin</div>
+          <div class="step-desc">
+            Paste both commands into Claude Code (one at a time):
+          </div>
+          <pre>/plugin marketplace add rimaslogic/time-assistant
+/plugin install time-assistant@rimaslogic-plugins</pre>
+          <div class="step-desc" style="margin-top:0.4rem;">
+            Python is set up automatically the first time Claude Code starts
+            after installation — no manual Python install needed.
+          </div>
+        </div>
+      </li>
+
+      <li>
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-title">Run the setup wizard</div>
+          <div class="step-desc">Type this in Claude Code:</div>
+          <div class="step-final">set up my time assistant</div>
+          <div class="step-desc" style="margin-top:0.4rem;">
+            The wizard connects your Google Calendar, stores an Oura or
+            Timeular token, and renders your first time brief.
+          </div>
+        </div>
+      </li>
+    </ol>
+
+    <div class="footer">
+      <a href="https://github.com/rimaslogic/time-assistant" target="_blank" rel="noopener noreferrer">
+        rimaslogic/time-assistant
+      </a>
+      &nbsp;·&nbsp; MIT License
+    </div>
+  </div>
+</body>
+</html>

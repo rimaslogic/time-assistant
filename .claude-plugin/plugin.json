@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "time-assistant",
+  "displayName": "Time Assistant",
+  "version": "0.1.0",
+  "description": "Multi-tenant 80/20-style time analysis & planning assistant. Classifies events (HVT/LVT), scores days and weeks, plans with a high-value-time lens, and pulls time/biometric/activity data through pluggable integrations.",
+  "author": {
+    "name": "Rimas Lukaszewicz",
+    "url": "https://rimaslogic.pl"
+  },
+  "homepage": "https://github.com/rimaslogic/time-assistant",
+  "repository": "https://github.com/rimaslogic/time-assistant",
+  "license": "MIT",
+  "keywords": ["time-tracking", "80-20", "hvt", "productivity", "planning"]
+}

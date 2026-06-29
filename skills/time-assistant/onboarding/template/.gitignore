@@ -1,0 +1,2 @@
+# Allow template config — it's a committed seed, not a secrets file
+!config.json

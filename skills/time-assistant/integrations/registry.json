@@ -1,0 +1,62 @@
+{
+  "integrations": [
+    {
+      "id": "timeular",
+      "kind": "time",
+      "label": "Timeular / EARLY (time tracking)",
+      "auth_fields": [
+        "EARLY_API_KEY",
+        "EARLY_API_SECRET"
+      ],
+      "capabilities": [
+        "entries",
+        "tags",
+        "activities"
+      ],
+      "how_to_obtain": "profile.timeular.com \u2192 Integrations \u2192 API (key + secret)"
+    },
+    {
+      "id": "oura",
+      "kind": "biometric",
+      "label": "Oura Ring (sleep / readiness)",
+      "auth_fields": [
+        "OURA_ACCESS_TOKEN"
+      ],
+      "capabilities": [
+        "readiness",
+        "sleep",
+        "hrv"
+      ],
+      "how_to_obtain": "cloud.ouraring.com/personal-access-tokens (active membership required)"
+    },
+    {
+      "id": "strava",
+      "kind": "activity",
+      "label": "Strava (training load)",
+      "auth_fields": [
+        "STRAVA_CLIENT_ID",
+        "STRAVA_CLIENT_SECRET",
+        "STRAVA_REFRESH_TOKEN"
+      ],
+      "capabilities": [
+        "activities",
+        "load",
+        "suffer_score"
+      ],
+      "how_to_obtain": "strava.com/settings/api \u2192 client id+secret, then OAuth for refresh token"
+    },
+    {
+      "id": "toggl",
+      "kind": "time",
+      "label": "Toggl Track (time tracking)",
+      "auth_fields": [
+        "TOGGL_API_TOKEN"
+      ],
+      "capabilities": [
+        "entries",
+        "tags"
+      ],
+      "how_to_obtain": "track.toggl.com \u2192 Profile \u2192 API Token"
+    }
+  ]
+}

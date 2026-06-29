@@ -1,0 +1,9 @@
+{
+  "tenant_id": "TEMPLATE",
+  "profile": "knowledge-worker",
+  "user": {"name": "CHANGE ME", "timezone": "UTC", "working_days": ["MO", "TU", "WE", "TH", "FR"]},
+  "framework": {},
+  "integrations": [],
+  "modules": [],
+  "attribution": {}
+}

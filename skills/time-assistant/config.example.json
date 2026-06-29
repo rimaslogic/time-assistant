@@ -1,0 +1,10 @@
+{
+  "_comment": "Example tenant config. Lives in the tenant's memory repo as config.json, NOT in the skill dir.",
+  "tenant_id": "example",
+  "profile": "knowledge-worker",
+  "user": {"name": "Example User", "timezone": "Europe/Warsaw", "working_days": ["MO", "TU", "WE", "TH", "FR"]},
+  "framework": {"hvt_ratio_target": 0.80, "lvt_cap": 0.20},
+  "integrations": ["timeular", "oura"],
+  "modules": [],
+  "attribution": {}
+}
