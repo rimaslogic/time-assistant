@@ -49,6 +49,12 @@ def test_wrapper_script_no_bare_claude(tmp_path):
     assert not re.search(r"^claude ", content, re.MULTILINE)
 
 
+def test_wrapper_script_prepends_local_bin_to_path(tmp_path):
+    """launchd/cron strip PATH; the wrapper must restore ~/.local/bin (Insight 1)."""
+    content = sch.wrapper_script(tmp_path / "store", claude_path="/abs/claude")
+    assert 'export PATH="$HOME/.local/bin:$PATH"' in content
+
+
 def test_wrapper_script_handles_awkward_prompt_and_store(tmp_path):
     """Prompt containing a double-quote and store path with a space must not
     produce a broken shell script; $d must still expand at runtime."""

@@ -85,6 +85,7 @@ def resolve_toggl_token(pasted: str, *, http=None) -> str:
     tried).
     """
     _http = http or _real_toggl_http
+    pasted = pasted.strip()  # paste often carries a trailing newline / stray space
     for scheme in ("Basic", "Bearer"):
         try:
             result = _http(scheme, pasted)
@@ -110,6 +111,24 @@ def validate(provider_id, values, *, http=None) -> bool:
             return False
     fn = http or _default_http
     return bool(fn(provider_id, values))
+
+
+def diagnose(provider_id, values, *, http=None) -> str:
+    """Return '' if the credentials validate, else a short human-readable reason.
+
+    Lets ``store_token.py`` tell the user *why* a token was rejected instead of a
+    silent "no". For *toggl*, surfaces the ``resolve_toggl_token`` error message;
+    for other providers, reports that the API rejected the credential. The reason
+    never contains the secret itself.
+    """
+    if provider_id == "toggl":
+        try:
+            resolve_toggl_token(values["TOGGL_API_TOKEN"], http=http)
+            return ""
+        except Exception as e:
+            return str(e)
+    return "" if validate(provider_id, values, http=http) else \
+        "the provider's API did not accept the credential"
 
 
 def store(provider_id, values, *, setter=credentials.set_secret, http=None) -> None:

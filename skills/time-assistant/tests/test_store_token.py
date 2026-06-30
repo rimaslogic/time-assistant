@@ -52,13 +52,36 @@ def test_failure_path_returns_1_and_does_not_call_store():
         getpass_fn=fake_getpass,
         validate=fake_validate,
         store=fake_store,
+        diagnose=lambda pid, vals: "the provider's API did not accept the credential",
         out=messages.append,
     )
 
     assert rc == 1
     assert "called" not in stored
-    assert len(messages) == 1
-    assert "didn't validate" in messages[0]
+    blob = "\n".join(messages)
+    assert "nothing was stored" in blob
+    assert "Re-run" in blob
+    # The actionable reason from diagnose() is surfaced to the user.
+    assert "did not accept" in blob
+    # The secret value is never echoed back.
+    assert "bad-token" not in blob
+
+
+def test_failure_path_skips_reason_line_when_diagnose_empty():
+    """When diagnose() returns '' the Reason line is omitted (still actionable)."""
+    messages = []
+    rc = store_token.main(
+        ["oura"],
+        getpass_fn=lambda p: "bad",
+        validate=lambda pid, vals: False,
+        store=lambda pid, values: None,
+        diagnose=lambda pid, vals: "",
+        out=messages.append,
+    )
+    assert rc == 1
+    blob = "\n".join(messages)
+    assert "Reason:" not in blob
+    assert "Re-run" in blob
 
 
 def test_unknown_provider_returns_2():

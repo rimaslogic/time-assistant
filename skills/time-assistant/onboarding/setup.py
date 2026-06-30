@@ -10,7 +10,7 @@ from onboarding import provision
 
 TEMPLATE_DIR = Path(__file__).resolve().parent / "template"
 ONBOARDING_STEPS = ["identity", "framework", "store", "calendar",
-                    "enrichments", "first_brief"]
+                    "enrichments", "rules", "first_brief"]
 
 
 def _config_path(store_dir) -> Path:

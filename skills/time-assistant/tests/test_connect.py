@@ -66,6 +66,21 @@ def test_resolve_toggl_token_bearer_no_api_token_field():
     assert result == "toggl_sk_fallback"
 
 
+def test_resolve_toggl_token_strips_whitespace():
+    """A pasted token with a trailing newline/space still resolves."""
+    seen = {}
+
+    def fake_http(scheme, token):
+        seen["token"] = token
+        if scheme == "Basic":
+            return {"api_token": token}
+        return None
+
+    result = connect.resolve_toggl_token("  classic32\n", http=fake_http)
+    assert result == "classic32"
+    assert seen["token"] == "classic32"  # http received the stripped value
+
+
 def test_resolve_toggl_token_invalid_raises():
     """All schemes fail → RuntimeError."""
     def fake_http(scheme, token):
@@ -128,6 +143,30 @@ def test_store_toggl_writes_resolved_classic_token():
     )
 
     assert ("TOGGL_API_TOKEN", "classic-resolved", "keystore") in calls
+
+
+def test_diagnose_toggl_returns_reason_on_failure():
+    """diagnose('toggl', ...) surfaces the resolve error string when auth fails."""
+    def fake_http(scheme, token):
+        return None  # all schemes fail
+
+    reason = connect.diagnose("toggl", {"TOGGL_API_TOKEN": "bad"}, http=fake_http)
+    assert "did not authenticate" in reason
+
+
+def test_diagnose_toggl_empty_on_success():
+    def fake_http(scheme, token):
+        return {"api_token": token} if scheme == "Basic" else None
+
+    assert connect.diagnose("toggl", {"TOGGL_API_TOKEN": "good"}, http=fake_http) == ""
+
+
+def test_diagnose_other_provider_reports_rejection():
+    reason = connect.diagnose("oura", {"OURA_ACCESS_TOKEN": "bad"},
+                              http=lambda pid, vals: False)
+    assert reason  # non-empty reason string
+    assert connect.diagnose("oura", {"OURA_ACCESS_TOKEN": "good"},
+                            http=lambda pid, vals: True) == ""
 
 
 def test_store_toggl_raises_if_token_invalid():

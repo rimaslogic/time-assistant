@@ -67,6 +67,10 @@ def wrapper_script(store_dir, *, claude_path, prompt=DEFAULT_PROMPT) -> str:
     # go to scheduler.log. All paths/prompt are shlex-quoted to prevent injection.
     return (
         "#!/bin/sh\n"
+        # launchd/cron hand the job a stripped PATH that often omits ~/.local/bin
+        # (a common claude install location). Prepend it so a bare `claude` and
+        # any child processes resolve even if claude_path ever regresses.
+        'export PATH="$HOME/.local/bin:$PATH"\n'
         'd="$(date +%F)"\n'
         f'briefs={q_briefs}\n'
         'mkdir -p "$briefs"\n'

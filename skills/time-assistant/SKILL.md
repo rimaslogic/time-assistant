@@ -121,7 +121,7 @@ Then invoke steps as `"$PY" -c "from onboarding.setup import next_step; ..."`. T
    ```
    Pass `store_dir=None` to use the default per-OS data dir; pass the chosen folder path when the user picks one. `working_days` is a list (e.g. `['Mon','Tue','Wed','Thu','Fri']`) and `modules` is the module list from the selected profile. After success, reveal the folder: `open <dir>` on macOS, `xdg-open` on Linux, `explorer` on Windows.
 
-4. **Calendar — recommended first source** (`calendar`) — connect **Google Calendar** through Claude's own connector UI (no token paste required). This single connection makes the assistant immediately useful and is fully self-contained.
+4. **Calendar — recommended first source** (`calendar`) — connect **Google Calendar** through Claude's own connector UI (no token paste required). This single connection makes the assistant immediately useful and is fully self-contained. **Explain which calendars you'll include and why, then confirm.** When the account has several calendars, don't silently pick a subset — list what you're including (e.g. primary + family + holidays) and what you're excluding (e.g. Todoist mirror, other household members' calendars), give the one-line reason (work/time-relevant vs noise), and ask the user to adjust before continuing. A wrong auto-selection is invisible to a non-technical user otherwise.
 
 5. **Optional enrichments** (`enrichments`) — for each provider in `onboarding.connect.PROVIDER_FIELDS` the user wants (Oura, Timeular/EARLY, Toggl): open **exactly one** provider page at a time, using the specific sub-URL for token/profile creation (e.g. Toggl → Profile page, not a generic Integrations hub; never open multiple provider tabs at once). Wait for the user to complete that step, then move to the next. Open with `open`/`xdg-open`/`explorer`, then tell them to run the hidden-input helper **themselves** with the `!` prefix (keeps the secret out of the chat, command previews, and terminal history).
 
@@ -135,9 +135,13 @@ Then invoke steps as `"$PY" -c "from onboarding.setup import next_step; ..."`. T
    ! "$TIME_ASSISTANT_PYTHON" "/abs/path/to/skills/time-assistant/onboarding/store_token.py" oura
    ```
 
-   The helper hides input, validates against the provider's API, and stores in the OS keystore. On failure it reports without storing and the user can re-run. All enrichments are skippable — tell the user they can add them anytime.
+   The helper hides input, validates against the provider's API, and stores in the OS keystore. On failure it reports the reason without storing, and the user can re-run. All enrichments are skippable — tell the user they can add them anytime.
 
-   **Do NOT ask the user to paste tokens into the chat and never put a token in a command you run.** Secrets are entered only through these `!`-run hidden prompts.
+   **Ask before pulling live data.** Once a provider is connected, the helper has already validated it — do **not** immediately start fetching real entries (e.g. "pulling your last 7 days…") unannounced. Ask first: "Want me to pull your last 7 days from [Toggl] to confirm it's working and seed classification?" A single yes is enough (it's covered by the batched-consent grant from the top of the wizard) — the point is to not surprise the user with a burst of data-access prompts mid-step.
+
+   **`store_token.py` is the ONLY sanctioned way to capture a token — never improvise around it.** Even if a step appears to fail, you must NOT: write ad-hoc code to read `registry.json` / `auth_fields`, call the provider's API directly yourself, or ask the user to paste the token into the chat "to test it." Hand-rolling any of this leaks the secret into the chat *and* tends to break (e.g. parsing the registry by hand → `'list' object has no attribute 'get'`). The helper already validates and stores; trust it.
+
+   **If the helper says it didn't validate**, the entire recovery path is: tell the user to re-run the exact same `!` command and double-check they copied the *whole* token with no leading/trailing spaces or line breaks. The helper prints the reason. Do **not** fall back to a manual API call or a pasted token under any circumstances.
 
    - **Strava (advanced)** — Strava needs an API app and an OAuth round-trip, so it is a few more steps; offer it only if the user wants training-load data. **⚠ Paid-plan warning:** the Strava API requires a paid Strava subscription for extended data access — warn the user before proceeding and let them skip. Tell them to run the Strava connector **themselves** with the `!` prefix (hidden client id/secret + on-device OAuth). As above, substitute the **FULL absolute path** to the script — do NOT rely on `${CLAUDE_PLUGIN_ROOT}` in the user's `!` shell:
 
@@ -149,9 +153,13 @@ Then invoke steps as `"$PY" -c "from onboarding.setup import next_step; ..."`. T
 
    **Security note:** the assistant must never request a secret in chat or place one in a command — secrets are entered only through these `!`-run hidden prompts.
 
-6. **First brief** (`first_brief`) — generate the first morning brief immediately so the user sees the assistant working before they leave the wizard.
+6. **Classification rules** (`rules`) — set up HVT/LVT classification *before* the first brief, so the brief isn't dominated by "unclassified" time. (Without rules, mixed time-tracker entries like "CRM + DMs + coding" land unclassified — in testing 40–73% of time was unclassified until rules were added, which is a poor first impression.) If a time source (Toggl/Timeular) was connected in step 5, pull the **last 7 days of entries**, surface the most common activities/descriptions, and propose candidate rules ("`Twenty CRM` → HVT", "`support DMs` → LVT") in the tenant's framework. Let the user accept/edit/skip each; write accepted rules to `rules.json`. Confirm before writing (per "Don't invent rules"). If no time source was connected, briefly explain that classification will improve as they tag time, and move on. Skippable.
 
-   **Optionally, offer to schedule a daily brief.** Ask if they would like the brief to run automatically each morning and at what time. If yes: `art = onboarding.schedule.artifact_for(<platform>, hour, minute)`; show them exactly what will be added; on macOS/Linux call `onboarding.schedule.install(<platform>, art)` after they agree; on Windows show `art["content"]` for them to paste. Always show what is being installed first — never modify their system silently. When asking the user to confirm any action (e.g. "Install this?" or "Shall I schedule this?"), explicitly restate exactly what to type — for example: "Type `yes` to install, or press Enter to skip." Claude Code's session-rating survey can appear alongside the prompt and obscure the original question, so restating makes the confirmation unambiguous. Skippable.
+7. **First brief** (`first_brief`) — generate the first morning brief immediately so the user sees the assistant working before they leave the wizard. With step 6's rules in place this should already show a meaningful HVT%, not a wall of "unclassified."
+
+   **Optionally, offer to schedule a daily brief.** Ask if they would like the brief to run automatically each morning and at what time. If yes, resolve the claude binary first with `cp = onboarding.schedule.resolve_claude()` (this finds the absolute path even when `claude` is missing from launchd/cron's stripped PATH — see Insight below), then build the artifact passing **all** required keywords: `art = onboarding.schedule.artifact_for(<platform>, hour, minute, store_dir=<store_dir>, claude_path=cp)`. Show them exactly what will be added; on macOS/Linux call `onboarding.schedule.install(<platform>, art, store_dir=<store_dir>, claude_path=cp)` after they agree; on Windows show `art["content"]` for them to paste. Always show what is being installed first — never modify their system silently. When asking the user to confirm any action (e.g. "Install this?" or "Shall I schedule this?"), explicitly restate exactly what to type — for example: "Type `yes` to install, or press Enter to skip." Claude Code's session-rating survey can appear alongside the prompt and obscure the original question, so restating makes the confirmation unambiguous. Skippable.
+
+   **⚠ PATH note (recurs on some Macs):** `claude` is frequently *not* on the PATH that launchd/cron hand to the scheduled job — it commonly lives at `~/.local/bin/claude`. Always go through `resolve_claude()` and pass the result as `claude_path=`; never let a bare `claude` reach the schedule artifact. The generated wrapper also prepends `~/.local/bin` to PATH as a belt-and-suspenders.
 
 After each step, call `onboarding.setup.mark_step_done(store_dir, "<step-id>")`. Note: progress is persisted only from the **store** step onward — before the store exists there is nothing to write, and `mark_step_done` safely no-ops.
 
@@ -229,7 +237,7 @@ Pull from `daily_scores.json` and summarize. Don't re-run the routine.
 
 ### "How's today looking?" / "Run morning brief" (on-demand local mode)
 
-Produces a full brief identical to the routine, but run locally on request:
+Produces a full brief identical to the routine, but run locally on request. **Always run this in the current local session — never via a remote/cloud trigger** (see Behaviors to avoid: a cloud session can't see the local config/rules/tokens and will report a false failure).
 
 1. Pull **today's Google Calendar** events (tenant's timezone from `config.json`)
 2. Pull **last 7 days time-tracking entries** via the configured time-tracking adapter. **TIMEZONE RULE (mandatory):** time-source timestamps (Toggl, etc.) are UTC — convert every timestamp to the tenant's timezone BEFORE bucketing by day or computing hours: `engine.timeutil.to_zone(ts, config.user.timezone)`. Failure to convert causes entries to appear in the wrong day (e.g. 04:10 UTC shown instead of 06:10 CEST). Then compute HVT%, unclassified %.
@@ -296,6 +304,7 @@ Use Gmail MCP (`search_threads`, `get_thread`):
 - Don't assume the tenant wants a plan pushed to Calendar unless they said so.
 - If the tenant asks about the routines themselves (scheduling, how to edit), refer them to `onboarding/SETUP.md` — this Skill is about time analysis, not routine admin.
 - Don't show the client budget tracker if `client_budget` is not in the tenant's enabled modules.
+- **Never use a remote/cloud trigger to run or "test" a brief, review, or anything that reads the user's data** — e.g. `create_trigger` with `create_new_session_on_fire`, or any "run this in a fresh cloud session" mechanism. Those sessions have **no access** to the user's local `config.json`, `rules.json`, or keystore tokens, so they report a false *"no Google Calendar / Toggl connection or rules.json found"* failure even when the local setup is perfect — which reads to the user as "it's broken." **"Run it now" / "test it now" = run it directly in the current local session.** The only recurring automation is the local `onboarding.schedule` job (launchd/cron), which runs on the user's own machine — never a cloud trigger.
 
 ## Files in this skill
 

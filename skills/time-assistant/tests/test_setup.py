@@ -42,6 +42,14 @@ def test_onboarding_state_resumable_idempotent(tmp_path):
     assert setup.next_step(store) == "framework"
 
 
+def test_rules_step_runs_after_enrichments_before_first_brief(tmp_path):
+    """Classification rules are gathered before the first brief so it isn't
+    dominated by 'unclassified' time (tester Insight 3)."""
+    steps = setup.ONBOARDING_STEPS
+    assert steps.index("rules") == steps.index("enrichments") + 1
+    assert steps.index("rules") < steps.index("first_brief")
+
+
 def test_mark_step_done_noop_before_store(tmp_path):
     # No config.json yet -> must not raise.
     setup.mark_step_done(tmp_path / "nonexistent-store", "identity")
