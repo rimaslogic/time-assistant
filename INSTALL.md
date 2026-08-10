@@ -50,9 +50,11 @@ The wizard will:
 1. Create your private data store in the plugin's per-OS application-data folder
    (or a synced folder you choose).
 2. Walk you through connecting **Google Calendar** (zero-friction, no token paste).
-3. Optionally prompt for an **Oura** token and/or a **Timeular** API key, validate each,
-   and store it in the OS keystore.
-4. Optionally connect **Strava** (advanced — needs a Strava API app; on-device OAuth).
+3. Optionally ask for an **Oura** token and/or a **Timeular/EARLY** API key + secret,
+   which you paste into the chat; they are stored in a permission-locked file
+   inside your data store.
+4. Optionally connect **Strava** — you paste Client ID, Client Secret and a
+   refresh token you already hold.
 5. Render your first time brief.
 6. Optionally offer to schedule a daily brief (you see exactly what gets installed first).
 
@@ -123,9 +125,10 @@ Run on a clean tenant (no existing data store):
 |-------|----------|
 | Data store created | the per-OS data folder (or chosen folder) contains `config.json` + seeded files after the wizard completes |
 | Google Calendar | connector authorises; at least one calendar event is readable |
-| Oura token | validates against the Oura API; stored in the OS keystore |
-| Timeular token | validates against Timeular API v3; stored in the OS keystore |
-| Toggl token | paste a `toggl_sk_…` service-account token → wizard resolves it to the canonical classic `api_token` via `GET /api/v9/me` and stores that; Basic auth in the adapter works thereafter |
+| Oura token | pasted in chat; lands in `<store>/.credentials.json`, mode 0600 |
+| Timeular/EARLY key + secret | both fields pasted in chat; stored in the same file |
+| Toggl token | paste the classic 32-character `api_token` from Profile → API Token (a `toggl_sk_…` service-account token is no longer exchanged for you) |
+| Credentials file | never appears in `git status` inside the data store — the writer adds it to `.gitignore` first |
 | First brief | morning brief renders without errors |
 
 ---
@@ -147,10 +150,11 @@ Run on a clean tenant (no existing data store):
 Scenario: user wants training-load data.
 
 1. In the wizard's enrichment step, choose Strava.
-2. Confirm it opens the Strava API page; create an app and paste Client ID + Secret.
-3. Confirm the browser opens Strava's authorize page; approve.
-4. Confirm the localhost listener captures the code, the token exchange succeeds, and
-   `STRAVA_CLIENT_ID` / `STRAVA_CLIENT_SECRET` / `STRAVA_REFRESH_TOKEN` are stored in the keystore.
+2. Confirm it opens the Strava API page; create an app and copy Client ID + Secret.
+3. Obtain a refresh token via your own OAuth exchange — the plugin no longer
+   performs one. Without it, Strava cannot be connected.
+4. Paste all three values in the chat; confirm `STRAVA_CLIENT_ID` /
+   `STRAVA_CLIENT_SECRET` / `STRAVA_REFRESH_TOKEN` land in `.credentials.json`.
 5. Confirm a subsequent brief can read Strava load.
 
 ---

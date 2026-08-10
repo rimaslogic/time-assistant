@@ -75,10 +75,10 @@ Most time trackers tell you *what* you did. This one tells you whether it **matt
                                           │
                  ┌────────────────────────┼─────────────────────────┐
                  ▼                        ▼                          ▼
-        per-OS data folder        OS keystore (tokens)      integrations
-        (rules, scores,           macOS Keychain /          • Google Calendar (1-click)
-         config — local)          Credential Locker /       • Oura · Timeular (paste)
-                                   Secret Service            • Strava (advanced, on-device OAuth)
+        per-OS data folder        .credentials.json         integrations
+        (rules, scores,           in your data store,       • Google Calendar (1-click)
+         config — local)          mode 0600, git-ignored    • Oura · Timeular (paste)
+                                                             • Strava (paste, incl. refresh token)
                  │
                  ▼
         "how's today?"  ·  "plan my week"  ·  "why am I drifting?"  ·  daily brief
@@ -95,16 +95,16 @@ No backend, no database. Claude Code provides the reasoning; the plugin provides
 | **Google Calendar** | your scheduled plan (the zero-friction default) | one click in Claude — no token paste |
 | **Oura** | sleep / readiness to time your hard cognitive work | paste a personal access token |
 | **Timeular** | precise time-tracking actuals vs. plan | paste an API key + secret |
-| **Strava** *(advanced)* | training load to balance recovery days | on-device OAuth — fully local, no backend |
+| **Strava** *(advanced)* | training load to balance recovery days | paste Client ID, Secret and a refresh token you already hold |
 
-Tokens are validated on entry and stored in your OS keystore. Every integration is optional and skippable.
+You paste tokens into the chat and they are written straight to a permission-locked file in your data store. They are **not** verified at that moment — the real check is pulling data afterwards, which the wizard offers. Every integration is optional and skippable.
 
 ---
 
 ## Privacy & your data
 
 - **Local-first.** Your rules, scores, and config live in a folder on **your** machine (optionally a synced folder you choose). Nothing is sent to any server we run — there is no server.
-- **Secrets in the OS keystore** (macOS Keychain, Windows Credential Locker, Linux Secret Service), with a permission-locked file fallback.
+- **Secrets in one local file** — `.credentials.json` inside your data store, readable only by your user account (mode `0600`) and automatically added to that folder's `.gitignore` so it can never be committed. Credentials already held in the macOS Keychain from an earlier version are migrated into it automatically.
 - **No telemetry.** The only network calls are to the services you explicitly connect.
 
 ---
