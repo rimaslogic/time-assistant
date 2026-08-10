@@ -43,7 +43,7 @@
         "load",
         "suffer_score"
       ],
-      "how_to_obtain": "strava.com/settings/api \u2192 client id+secret, then OAuth for refresh token"
+      "how_to_obtain": "strava.com/settings/api \u2192 client id+secret; the refresh token must be obtained via your own OAuth exchange and pasted in"
     },
     {
       "id": "toggl",

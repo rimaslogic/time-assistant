@@ -20,8 +20,15 @@ def test_skill_md_documents_wizard():
 def test_skill_md_documents_strava_and_scheduling():
     text = (SKILL / "SKILL.md").read_text(encoding="utf-8").lower()
     assert "strava" in text
-    assert "onboarding.strava_connect" in text or "strava_connect" in text
+    assert "strava_refresh_token" in text
     assert "schedule" in text and ("onboarding.schedule" in text or "schedule.py" in text or "daily brief" in text)
+
+
+def test_skill_md_documents_paste_capture():
+    text = (SKILL / "SKILL.md").read_text(encoding="utf-8")
+    assert "save_credentials.py" in text
+    assert "store_token.py" not in text
+    assert "strava_connect.py" not in text
 
 
 def test_skill_md_wizard_polish():

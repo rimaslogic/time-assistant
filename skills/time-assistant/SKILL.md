@@ -56,12 +56,12 @@ To add a new integration, follow `integrations/_contract.md` — no changes to e
 
 ## Credentials
 
-Credentials are resolved via `engine.credentials.get_secret(name)` / `get_secrets(names)`. The provider is set by `TIME_ASSISTANT_CRED_PROVIDER` ∈ `{env, bitwarden, keychain, keystore}` (default: `env`).
+Credentials are resolved via `engine.credentials.get_secret(name)` / `get_secrets(names)`. With no explicit provider the `keystore` chain is used: the credentials file, then environment variables, then legacy locations (macOS Keychain and `user_config_dir()/secrets.json`), which are migrated into the file on first hit. `TIME_ASSISTANT_CRED_PROVIDER` ∈ `{env, bitwarden, keychain, keystore}` forces a single source.
 
-**New installs** use `keystore` as `cred_provider` (set automatically by `onboarding.setup.setup(...)`). The keystore provider uses the OS Keychain on macOS and a permission-locked file on Linux/Windows — no external vault required. The tenant registry is stored at `engine.paths.user_config_dir()/tenants.json`.
+**New installs** use `keystore` as `cred_provider` (set automatically by `onboarding.setup.setup(...)`). Secrets live in `<store_dir>/.credentials.json`, mode `0600`, falling back to `engine.paths.user_config_dir()/.credentials.json` when no tenant is registered yet. The file is added to the store's `.gitignore` before the first write. No external vault required. The tenant registry is stored at `engine.paths.user_config_dir()/tenants.json`.
 
-- **`env`** (default): reads directly from environment variables. Suitable for CI or any environment where secrets are injected at launch.
-- **`keystore`** (default for new installs): uses the OS Keychain on macOS (`security find-generic-password`) and a permission-locked JSON file (`secrets.json`, mode 0600) on Linux/Windows. No external vault required.
+- **`env`**: reads directly from environment variables. Suitable for CI or any environment where secrets are injected at launch.
+- **`keystore`** (the default): a permission-locked JSON file (`.credentials.json`, mode 0600) inside the tenant store, plus environment and legacy fallbacks. No external vault required.
 - **`bitwarden`**: fetches secrets from a Bitwarden-compatible vault via the `bw` CLI. Requires `BW_SESSION` to be set (unlock with `bw unlock --raw` before calling). Vault item names must match the credential env-var names exactly.
 - **`keychain`**: reads directly from macOS Keychain via `security find-generic-password` (bypasses the keystore abstraction).
 
@@ -123,35 +123,29 @@ Then invoke steps as `"$PY" -c "from onboarding.setup import next_step; ..."`. T
 
 4. **Calendar — recommended first source** (`calendar`) — connect **Google Calendar** through Claude's own connector UI (no token paste required). This single connection makes the assistant immediately useful and is fully self-contained. **Explain which calendars you'll include and why, then confirm.** When the account has several calendars, don't silently pick a subset — list what you're including (e.g. primary + family + holidays) and what you're excluding (e.g. Todoist mirror, other household members' calendars), give the one-line reason (work/time-relevant vs noise), and ask the user to adjust before continuing. A wrong auto-selection is invisible to a non-technical user otherwise.
 
-5. **Optional enrichments** (`enrichments`) — for each provider in `onboarding.connect.PROVIDER_FIELDS` the user wants (Oura, Timeular/EARLY, Toggl): open **exactly one** provider page at a time, using the specific sub-URL for token/profile creation (e.g. Toggl → Profile page, not a generic Integrations hub; never open multiple provider tabs at once). Wait for the user to complete that step, then move to the next. Open with `open`/`xdg-open`/`explorer`, then tell them to run the hidden-input helper **themselves** with the `!` prefix (keeps the secret out of the chat, command previews, and terminal history).
+5. **Optional enrichments** (`enrichments`) — for each provider in `onboarding.connect.PROVIDER_FIELDS` the user wants (Oura, Timeular/EARLY, Toggl, Strava): open **exactly one** provider page at a time using `connect.PROVIDER_PAGES[<id>]` (`open` / `xdg-open` / `explorer`), wait for them to finish, then move to the next. Never open multiple provider tabs at once.
 
-   **⚠ Paid-plan warning — say this before opening the page:** Timeular integrations and the EARLY API each require a **paid plan of that service**. Before opening Timeular or EARLY setup pages, say: "Note: this integration requires a paid [Timeular / EARLY] subscription. Skip if you don't have one — you can add it any time." Let the user skip without friction.
+   **⚠ Paid-plan warning — say this before opening the page:** the Oura API needs an active Oura membership; Timeular/EARLY integrations need a paid plan of that service; Strava's API needs a paid Strava subscription. Say so *before* opening each page and let the user skip without friction.
 
-   **Oura "no data yet" = normal sync delay, not an error:** If Oura returns no readiness data immediately after connecting, tell the user: "Your ring is still syncing — this is normal and usually resolves within a few minutes. The assistant will pick up data on the next run." Do not frame this as a connection error.
-
-   First **determine the plugin's install directory** and give the user the command with the **FULL absolute path** to the helper — do NOT rely on `${CLAUDE_PLUGIN_ROOT}` being set in the user's `!` shell (it usually is not, and the path would expand to `/skills/...` → "no such file"). For example, after resolving the absolute path:
+   **The user pastes their credentials into the chat.** Ask for the fields that provider needs and store them by piping a JSON object into `save_credentials.py` on **stdin** — never as command-line arguments:
 
    ```
-   ! "$TIME_ASSISTANT_PYTHON" "/abs/path/to/skills/time-assistant/onboarding/store_token.py" oura
+   echo '{"OURA_ACCESS_TOKEN": "…"}' | "$TIME_ASSISTANT_PYTHON" "/abs/path/to/skills/time-assistant/onboarding/save_credentials.py"
    ```
 
-   The helper hides input, validates against the provider's API, and stores in the OS keystore. On failure it reports the reason without storing, and the user can re-run. All enrichments are skippable — tell the user they can add them anytime.
+   Resolve the plugin's install directory and use the **FULL absolute path** — `${CLAUDE_PLUGIN_ROOT}` is usually unset in the shell that runs this. The script prints only the field names it stored.
 
-   **Ask before pulling live data.** Once a provider is connected, the helper has already validated it — do **not** immediately start fetching real entries (e.g. "pulling your last 7 days…") unannounced. Ask first: "Want me to pull your last 7 days from [Toggl] to confirm it's working and seed classification?" A single yes is enough (it's covered by the batched-consent grant from the top of the wizard) — the point is to not surprise the user with a burst of data-access prompts mid-step.
+   Field names per provider: Oura `OURA_ACCESS_TOKEN`; EARLY `EARLY_API_KEY` + `EARLY_API_SECRET`; Toggl `TOGGL_API_TOKEN` (the classic 32-character token from Profile → API Token, not a `toggl_sk_…` one); Strava `STRAVA_CLIENT_ID` + `STRAVA_CLIENT_SECRET` + `STRAVA_REFRESH_TOKEN`.
 
-   **`store_token.py` is the ONLY sanctioned way to capture a token — never improvise around it.** Even if a step appears to fail, you must NOT: write ad-hoc code to read `registry.json` / `auth_fields`, call the provider's API directly yourself, or ask the user to paste the token into the chat "to test it." Hand-rolling any of this leaks the secret into the chat *and* tends to break (e.g. parsing the registry by hand → `'list' object has no attribute 'get'`). The helper already validates and stores; trust it.
+   **Nothing is validated at store time.** A well-formed but wrong value is stored and shows up later as an adapter error, so after storing, offer to pull data as the real check (see below).
 
-   **If the helper says it didn't validate**, the entire recovery path is: tell the user to re-run the exact same `!` command and double-check they copied the *whole* token with no leading/trailing spaces or line breaks. The helper prints the reason. Do **not** fall back to a manual API call or a pasted token under any circumstances.
+   **Oura "no data yet" = normal sync delay, not an error:** if Oura returns no readiness data immediately after connecting, tell the user "Your ring is still syncing — this is normal and usually resolves within a few minutes." Do not frame it as a connection error.
 
-   - **Strava (advanced)** — Strava needs an API app and an OAuth round-trip, so it is a few more steps; offer it only if the user wants training-load data. **⚠ Paid-plan warning:** the Strava API requires a paid Strava subscription for extended data access — warn the user before proceeding and let them skip. Tell them to run the Strava connector **themselves** with the `!` prefix (hidden client id/secret + on-device OAuth). As above, substitute the **FULL absolute path** to the script — do NOT rely on `${CLAUDE_PLUGIN_ROOT}` in the user's `!` shell:
+   **Ask before pulling live data.** Once a provider is stored, ask: "Want me to pull your last 7 days from [Oura] to confirm it's working and seed classification?" A single yes is enough — it is covered by the batched-consent grant from the top of the wizard.
 
-   ```
-   ! "$TIME_ASSISTANT_PYTHON" "/abs/path/to/skills/time-assistant/onboarding/strava_connect.py"
-   ```
+   **Strava needs a refresh token, and the user has to obtain it themselves.** The Strava settings page gives them Client ID and Client Secret; `STRAVA_REFRESH_TOKEN` comes from an OAuth exchange the plugin no longer performs. If they do not already have one, tell them plainly that Strava can't be connected this way and move on — do not improvise an OAuth flow.
 
-   The script reads Client ID and Client Secret via hidden prompts, opens the Strava authorization page, catches the OAuth callback on a localhost listener, exchanges for a refresh token, and stores all credentials in the OS keystore — no values are shown or logged. All on-device, no backend. If they do not use Strava, skip it.
-
-   **Security note:** the assistant must never request a secret in chat or place one in a command — secrets are entered only through these `!`-run hidden prompts.
+   All enrichments are skippable — tell the user they can add them any time.
 
 6. **Classification rules** (`rules`) — set up HVT/LVT classification *before* the first brief, so the brief isn't dominated by "unclassified" time. (Without rules, mixed time-tracker entries like "CRM + DMs + coding" land unclassified — in testing 40–73% of time was unclassified until rules were added, which is a poor first impression.) If a time source (Toggl/Timeular) was connected in step 5, pull the **last 7 days of entries**, surface the most common activities/descriptions, and propose candidate rules ("`Twenty CRM` → HVT", "`support DMs` → LVT") in the tenant's framework. Let the user accept/edit/skip each; write accepted rules to `rules.json`. Confirm before writing (per "Don't invent rules"). If no time source was connected, briefly explain that classification will improve as they tag time, and move on. Skippable.
 
@@ -165,7 +159,7 @@ After each step, call `onboarding.setup.mark_step_done(store_dir, "<step-id>")`.
 
 **Credentials / tenant-store notes for new installs:**
 
-- Secrets are stored via the `keystore` provider (macOS Keychain on macOS; a permission-locked file on Linux/Windows). This is recorded as `"cred_provider": "keystore"` in `config.json`.
+- Secrets are stored via the `keystore` provider — `<store_dir>/.credentials.json`, mode `0600`, git-ignored. This is recorded as `"cred_provider": "keystore"` in `config.json`.
 - The tenant registry for new installs lives at `engine.paths.user_config_dir()/tenants.json`. The `onboarding.setup.setup(...)` call creates this entry automatically.
 
 ## Onboarding (legacy — provision scripts)
@@ -312,7 +306,8 @@ Use Gmail MCP (`search_threads`, `get_thread`):
 engine/
   config.py       — load_tenant_config, Framework, DEFAULT_FRAMEWORK, load_profile
   memory.py       — resolve_store, read_json, write_json, list_tenants
-  credentials.py  — get_secret, get_secrets (providers: env | bitwarden | keychain)
+  credentials.py  — get_secret, get_secrets, set_secret (chain: file → env → legacy)
+  store_guard.py  — ensure_ignored: keeps .credentials.json out of git
   score.py        — score_day, week_to_date_ratio
   records.py      — TimeRecord, BiometricRecord, ActivityRecord
 

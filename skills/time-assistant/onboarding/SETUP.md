@@ -16,13 +16,15 @@
      --store ~/time-data/<customer> \
      --repo <org>/<customer>-time-data
    ```
-3. **Connect integrations.** For each integration in the config, store its
-   `auth_fields` (see `integrations/registry.json`) wherever the tenant's
-   credential provider expects them:
-   - `env` provider → export the vars before running.
-   - `bitwarden` provider → `bw` vault items named exactly as the auth fields.
-   - `keychain` provider → `security add-generic-password -s <FIELD> -a $USER -w`.
-   Set `TIME_ASSISTANT_CRED_PROVIDER` accordingly.
+3. **Connect integrations.** Ask the customer for the fields listed in
+   `integrations/registry.json` → `auth_fields` and pipe them in as JSON:
+   ```bash
+   echo '{"OURA_ACCESS_TOKEN": "…"}' | python3 onboarding/save_credentials.py
+   ```
+   They land in `<store>/.credentials.json` (mode `0600`), which the writer
+   adds to the store's `.gitignore` first. Nothing is validated at store time —
+   confirm by pulling data. `TIME_ASSISTANT_CRED_PROVIDER` is only needed to
+   force a non-default source (`env` in CI, `bitwarden` for a vault-backed setup).
 4. **Verify:**
    ```bash
    TIME_ASSISTANT_TENANT=<customer> python3 -c \
